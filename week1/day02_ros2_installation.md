@@ -188,3 +188,338 @@ tmux attach             # 세션 재접속
 | apt key expired | `sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg` 재실행 |
 | colcon build 실패 | `sudo apt install python3-colcon-common-extensions` 확인 |
 | `Failed to communicate with DDS` | `ifconfig`로 네트워크 인터페이스 확인, loopback만 있으면 정상 |
+
+
+---
+
+
+# Day 2 — Raspberry Pi에 ROS2 Humble 설치
+
+## 목표
+
+RPi에 ROS2 Humble Hawksbill (ros-base)을 설치하고 정상 동작을 확인한다.
+
+---
+
+# 2.1 개요
+
+ROS2 Humble Hawksbill은 Ubuntu 22.04 (Jammy)를 공식 지원하는 LTS 배포판입니다.
+
+RPi의 리소스를 고려하여 `ros-base` (핵심 통신 라이브러리 + 빌드 도구)만 설치합니다.
+
+## ROS2 설치 방식 비교
+
+| 방식 | 설명 |
+|--------|--------|
+| Debian 패키지 (권장) | apt으로 간단 설치, 관리 용이 |
+| 소스 빌드 | 최신 기능 사용 가능, 빌드 시간 2시간 이상 (RPi에서는 비권장) |
+
+---
+
+# 2.2 ARM64 확인
+
+ROS2 Humble은 ARM64(aarch64) 환경을 권장합니다.
+
+현재 OS 아키텍처 확인:
+
+```bash
+uname -m
+```
+
+정상 결과:
+
+```text
+aarch64
+```
+
+만약 아래와 같이 나오면:
+
+```text
+armv7l
+```
+
+32비트 OS이므로 Ubuntu 22.04 64bit 재설치를 권장합니다.
+
+---
+
+# 2.3 시스템 업데이트
+
+ROS 설치 전에 시스템을 최신 상태로 업데이트합니다.
+
+```bash
+sudo apt update
+sudo apt full-upgrade -y
+sudo reboot
+```
+
+---
+
+# 2.4 Locale 설정
+
+ROS2는 UTF-8 Locale을 필요로 합니다.
+
+현재 Locale 확인:
+
+```bash
+locale
+```
+
+정상 예:
+
+```text
+LANG=en_US.UTF-8
+```
+
+또는
+
+```text
+LANG=C.UTF-8
+```
+
+UTF-8이 설정되지 않은 경우:
+
+```bash
+sudo apt update
+sudo apt install -y locales
+
+sudo locale-gen en_US en_US.UTF-8
+sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+
+export LANG=en_US.UTF-8
+```
+
+확인:
+
+```bash
+locale
+```
+
+---
+
+# 2.5 ROS2 Repository 추가
+
+필수 패키지 설치:
+
+```bash
+sudo apt install -y \
+software-properties-common \
+curl \
+gnupg \
+lsb-release
+```
+
+ROS2 GPG Key 추가:
+
+```bash
+sudo curl -sSL \
+https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+-o /usr/share/keyrings/ros-archive-keyring.gpg
+```
+
+Repository 등록:
+
+```bash
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu jammy main" | \
+sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+```
+
+패키지 목록 갱신:
+
+```bash
+sudo apt update
+```
+
+---
+
+# 2.6 ROS2 Humble Base 설치
+
+ROS2 Humble Base와 필수 개발 도구 설치:
+
+```bash
+sudo apt install -y \
+ros-humble-ros-base \
+python3-colcon-common-extensions \
+python3-argcomplete \
+ros-dev-tools
+```
+
+설치 후 시스템 정리:
+
+```bash
+sudo apt update
+sudo apt upgrade -y
+sudo apt autoremove -y
+```
+
+설치 용량:
+
+- 약 300~400MB
+
+참고:
+
+- `ros-humble-desktop`은 1GB 이상
+- Raspberry Pi에서는 `ros-base` 권장
+
+---
+
+# 2.7 ROS2 환경 변수 등록
+
+매 로그인 시 자동 적용되도록 설정합니다.
+
+```bash
+echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+```
+
+적용:
+
+```bash
+source ~/.bashrc
+```
+
+---
+
+# 2.8 DDS 설정 (CycloneDDS 권장)
+
+Raspberry Pi 여러 대를 사용할 경우 CycloneDDS가 안정적입니다.
+
+설치:
+
+```bash
+sudo apt install -y \
+ros-humble-rmw-cyclonedds-cpp
+```
+
+환경 변수 등록:
+
+```bash
+echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc
+```
+
+적용:
+
+```bash
+source ~/.bashrc
+```
+
+확인:
+
+```bash
+echo $RMW_IMPLEMENTATION
+```
+
+정상 결과:
+
+```text
+rmw_cyclonedds_cpp
+```
+
+---
+
+# 2.9 설치 확인
+
+ROS 버전 확인:
+
+```bash
+ros2 --version
+```
+
+환경 확인:
+
+```bash
+printenv | grep ROS
+```
+
+진단:
+
+```bash
+ros2 doctor
+```
+
+정상 결과:
+
+```text
+All checks passed
+```
+
+---
+
+# 2.10 ROS2 통신 테스트
+
+## 터미널 1
+
+```bash
+source /opt/ros/humble/setup.bash
+
+ros2 run demo_nodes_cpp talker
+```
+
+## 터미널 2
+
+```bash
+source /opt/ros/humble/setup.bash
+
+ros2 run demo_nodes_cpp listener
+```
+
+정상 결과:
+
+```text
+I heard: Hello World
+```
+
+메시지가 계속 출력되면 ROS2 설치 성공.
+
+---
+
+# 2.11 Raspberry Pi 성능 최적화
+
+메모리 확인:
+
+```bash
+free -h
+```
+
+GPU 메모리 조정:
+
+```bash
+sudo nano /boot/firmware/config.txt
+```
+
+추가 또는 수정:
+
+```text
+gpu_mem=128
+```
+
+저장 후 재부팅:
+
+```bash
+sudo reboot
+```
+
+---
+
+# 완료 기준
+
+다음 항목이 모두 성공하면 Day 2 완료.
+
+- [ ] Ubuntu 22.04 64bit 설치 확인
+- [ ] ARM64(aarch64) 확인
+- [ ] ROS2 Humble 설치 완료
+- [ ] bashrc 환경 등록 완료
+- [ ] CycloneDDS 설정 완료
+- [ ] ros2 doctor 정상 통과
+- [ ] Talker / Listener 통신 성공
+
+---
+
+# 다음 단계 (Day 3)
+
+- ROS2 Topic
+- ROS2 Service
+- ROS2 Action
+- ROS2 Parameter
+- ROS2 Launch File
+- ROS2 Workspace 생성
+- Colcon 빌드 실습
+
