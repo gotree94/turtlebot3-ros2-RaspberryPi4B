@@ -1,3 +1,354 @@
+# Day 2 — Raspberry Pi에 ROS2 Humble 설치 (최종본)
+
+**목표:** Raspberry Pi에 ROS2 Humble Hawksbill을 설치하고 talker/listener 통신을 확인한다.
+
+---
+
+## 사전 확인 사항
+
+- Ubuntu 22.04 Server (64bit) 이미징 완료
+- SSH 접속 가능 상태
+- 인터넷 연결 확인
+
+---
+
+## Step 1 — 아키텍처 확인
+
+```bash
+uname -m
+```
+
+**정상 결과:**
+```
+aarch64
+```
+
+> ⚠️ `armv7l` 이 나오면 32bit OS → Ubuntu 22.04 64bit로 재이미징 필요
+
+---
+
+## Step 2 — 시스템 업데이트
+
+> ⚠️ **핵심 주의사항**
+> - `full-upgrade` 절대 사용 금지 → 커널 교체로 부팅 불가 발생
+> - `upgrade` 도 대용량(500MB+) 쓰기로 저속 SD카드에서 Read-only 오류 발생
+> - **`apt update` 만 실행하고 upgrade 없이 바로 ROS2 설치로 진행**
+
+```bash
+sudo apt update
+```
+
+---
+
+## Step 3 — Locale 확인
+
+```bash
+locale
+```
+
+**정상 결과 (둘 중 하나면 OK):**
+```
+LANG=C.UTF-8
+```
+또는
+```
+LANG=en_US.UTF-8
+```
+
+> `C.UTF-8` 은 ROS2와 완전 호환되므로 추가 설정 불필요
+
+---
+
+## Step 4 — 필수 패키지 설치
+
+```bash
+sudo apt install -y \
+  software-properties-common \
+  curl \
+  gnupg \
+  lsb-release
+```
+
+---
+
+## Step 5 — ROS2 Repository 추가
+
+**GPG Key 추가:**
+```bash
+sudo curl -sSL \
+  https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+  -o /usr/share/keyrings/ros-archive-keyring.gpg
+```
+
+**Repository 등록:**
+```bash
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu jammy main" | \
+  sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+```
+
+**패키지 목록 갱신:**
+```bash
+sudo apt update
+```
+
+---
+
+## Step 6 — ROS2 Humble 설치
+
+```bash
+sudo apt install -y \
+  ros-humble-ros-base \
+  python3-colcon-common-extensions \
+  python3-argcomplete \
+  ros-dev-tools
+```
+
+> 설치 중 **"Which services should be restarted?"** 화면이 나오면
+> 아무것도 선택하지 않고 **Tab → OK → 엔터** 로 넘어가세요.
+
+---
+
+## Step 7 — 데모 노드 설치
+
+> `ros-base` 에는 demo_nodes가 포함되지 않으므로 별도 설치 필요
+
+```bash
+sudo apt install -y \
+  ros-humble-demo-nodes-cpp \
+  ros-humble-demo-nodes-py
+```
+
+---
+
+## Step 8 — 환경 변수 등록
+
+```bash
+echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+```
+
+---
+
+## Step 9 — CycloneDDS 설치 및 설정
+
+```bash
+sudo apt install -y ros-humble-rmw-cyclonedds-cpp
+```
+
+```bash
+echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc
+source ~/.bashrc
+```
+
+**확인:**
+```bash
+echo $RMW_IMPLEMENTATION
+```
+
+**정상 결과:**
+```
+rmw_cyclonedds_cpp
+```
+
+---
+
+## Step 10 — 설치 확인
+
+**환경 변수 확인:**
+```bash
+printenv | grep ROS
+```
+
+**패키지 수 확인:**
+```bash
+ros2 pkg list | wc -l
+```
+> 180개 이상이면 정상
+
+**전체 진단:**
+```bash
+ros2 doctor
+```
+
+**정상 결과:**
+```
+All 5 checks passed
+```
+
+> `UserWarning: XXX has been updated to a new version` 경고는 무시해도 됩니다.
+
+---
+
+## Step 11 — talker / listener 통신 테스트
+
+SSH 환경에서는 tmux로 두 터미널을 동시에 운용합니다.
+
+**tmux 설치:**
+```bash
+sudo apt install -y tmux
+```
+
+**tmux 시작:**
+```bash
+tmux
+```
+
+**터미널 1 — talker 실행:**
+```bash
+ros2 run demo_nodes_cpp talker
+```
+
+**터미널 2 열기:**
+```
+Ctrl+B 누른 후 "  (가로 분할)
+Ctrl+B 방향키    (창 이동)
+```
+
+**터미널 2 — listener 실행:**
+```bash
+ros2 run demo_nodes_cpp listener
+```
+
+**정상 결과:**
+```
+[INFO] [talker]: Publishing: 'Hello World: 1'
+[INFO] [listener]: I heard: Hello World: 1
+[INFO] [talker]: Publishing: 'Hello World: 2'
+[INFO] [listener]: I heard: Hello World: 2
+```
+
+종료: 각 터미널에서 `Ctrl+C`
+
+---
+
+## Step 12 — 재부팅 및 최종 확인
+
+모든 설정 완료 후 **단 1회** 재부팅합니다.
+
+```bash
+sudo reboot
+```
+
+재접속 후 확인:
+```bash
+echo $RMW_IMPLEMENTATION
+ros2 doctor
+```
+
+---
+
+## ✅ 완료 기준
+
+| 항목 | 확인 방법 | 정상 결과 |
+|------|-----------|-----------|
+| aarch64 확인 | `uname -m` | `aarch64` |
+| ROS2 설치 | `ros2 pkg list \| wc -l` | 180+ |
+| 환경 변수 | `printenv \| grep ROS` | ROS 관련 변수 출력 |
+| CycloneDDS | `echo $RMW_IMPLEMENTATION` | `rmw_cyclonedds_cpp` |
+| 전체 진단 | `ros2 doctor` | `All 5 checks passed` |
+| 통신 테스트 | talker/listener | `I heard: Hello World` 출력 |
+
+---
+
+## ⚠️ 시행착오 요약 (참고)
+
+| 문제 | 원인 | 해결 |
+|------|------|------|
+| 재부팅 후 SSH 불가, 화면 없음 | `full-upgrade` 로 커널 교체 | `upgrade` 금지, `update` 만 사용 |
+| Read-only file system | 저속 SD카드(U1)에서 대용량 쓰기 실패 | `upgrade` 생략, 고속 SD카드 사용 |
+| `ros2 --version` 에러 | Humble은 `--version` 미지원 | `ros2 doctor` 또는 `ros2 pkg list` 로 확인 |
+| `demo_nodes_cpp` not found | `ros-base` 에 미포함 | `ros-humble-demo-nodes-cpp` 별도 설치 |
+| `$RMW_IMPLEMENTATION` 빈값 | CycloneDDS 미설치 | Step 9 진행 |
+
+---
+
+## 🛠️ 편의성 향상을 위한 Alias 추가 구성
+> 라즈베리 파이 환경에서는 매번 긴 명령어를 치거나 임베디드 개발 특성상 빌드/환경 초기화를 자주 하므로, <br> 아래 단축어들을 Step 8이나 별도 단축어 섹션에 추가하면 작업 효율이 극대화됩니다.
+
+1. 가이드에 추가할 추천 단축어 목록
+  * sb: ~/.bashrc 반영 및 확인 메시지 출력
+  * eb: ~/.bashrc 파일을 nano 편집기로 즉시 오픈 (수정이 잦으므로 유용)
+  * humble: ROS2 환경 변수 수동 활성화 (기본 자동 로드가 아닌 선택적 로드를 원할 때 활용)
+  * cw: Colcon 워크스페이스(주로 ~/ros2_ws)로 즉시 이동 및 빌드 환경 로드 (추후 개발 시 필수)
+
+## 📝 가이드 수정 및 반영안
+가이드의 Step 8 — 환경 변수 등록 부분을 아래와 같이 확장하여 작성하시면 가장 자연스럽습니다.
+
+### Step 8 — 환경 변수 및 단축어(Alias) 등록
+터미널을 편리하게 사용하고, ROS2 환경 및 개발 워크스페이스를 쉽게 제어하기 위해 ~/.bashrc에 환경 변수와 단축 명령어를 등록합니다.
+
+```Bash
+# 1. ROS2 기본 환경 변수 등록
+echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+
+# 2. 편리한 터미널 환경을 위한 Alias(단축어) 등록
+echo "alias eb='vi ~/.bashrc'" >> ~/.bashrc
+# sb 등록 (느낌표 이스케이프 처리)
+echo 'alias sb="source ~/.bashrc; echo '\''[SUCCESS] .bashrc reloaded!'\''"' >> ~/.bashrc
+# humble 등록
+echo 'alias humble="source /opt/ros/humble/setup.bash; echo '\''[ROS2] Humble Hawksbill activated!'\''"' >> ~/.bashrc
+# cw 등록
+echo 'alias cw="cd ~/ros2_ws && source install/setup.bash; echo '\''[ROS2] Workspace loaded!'\''"' >> ~/.bashrc
+# ros2ws
+echo 'alias ros2ws="source ~/IsaacSim-ros_workspaces/humble_ws/install/setup.bash; echo '\''IsaacSim ROS2 workspaces!'\''"' >> ~/.bashrc
+
+# ==========================================
+# ROS2 & Workspace Shortcuts
+# ==========================================
+source /opt/ros/humble/setup.bash
+
+alias eb='nano ~/.bashrc'
+alias sb="source ~/.bashrc; echo '[SUCCESS] .bashrc reloaded!'"
+alias humble="source /opt/ros/humble/setup.bash; echo '[ROS2] Humble Hawksbill activated!'"
+alias cw="cd ~/ros2_ws && source install/setup.bash; echo '[ROS2] Workspace loaded!'"
+alias ros2ws="if [ -f ~/turtlebot3_ws/install/setup.bash ]; then source ~/turtlebot3_ws/install/setup.bash; echo 'TurtleBot3 ROS2 workspace activated!'; else echo '[WARN] Workspace not built yet! Run colcon build first.'; fi"
+
+
+# (선택) 추후 작업할 colcon 워크스페이스가 있다면 함께 등록해두면 편리합니다.
+echo "alias cw='cd ~/ros2_ws && source install/setup.bash; echo \"[ROS2] Workspace loaded!\"'" >> ~/.bashrc
+
+# 3. 변경 사항 적용
+source ~/.bashrc
+```
+
+* 💡 Tip: 만약 기본 ~/.bashrc 진입 시 자동으로 ROS2가 로드되는 것이 부담스럽고(다른 임베디드 작업 혼용 등), 원할 때만 ROS2를 켜고 싶다면
+
+```
+echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc 라인을 생략하고, 필요할 때마다 터미널에 **humble**을 쳐서 활성화하는 방식으로 운영하셔도 좋습니다.
+```
+
+## 🔍 최종 검토 피드백 (완벽하지만 한 줄 더 정교하게)
+* 현재 가이드의 완성도가 매우 높으나, Step 8에서 명령어 간 줄바꿈이나 세미콜론 처리가 가이드 가독성상 분리되면 더 좋습니다.
+
+* 기존 코드:
+```Bash
+echo "source /opt/ros/humble/setup.bash" >> ~/.bashrcsource ~/.bashrc
+```
+* (문서 타이핑 중 source가 붙어 가독성이 떨어져 보일 수 있으므로 아래와 같이 분리하는 것을 권장합니다)
+
+* 개선 코드:
+```
+Bashecho "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+```
+
+## 📋 완료 기준 표 업데이트 (Alias 항목 추가)
+
+| 항목 | 확인 방법 | 정상 결과 | 
+|:---------------:|:---------------:|:---------------:|
+| aarch64 확인 | uname -m | aarch64 | 
+| ROS2 설치 | ros2 pkg list | wc -l | 180+ | 
+| 환경 변수 | printenv | grep ROS | ROS 관련 변수 출력 | 
+| CycloneDDS | echo $RMW_IMPLEMENTATION | rmw_cyclonedds_cpp | 
+| 단축어 동작 | sb | [SUCCESS] .bashrc reloaded! 출력 | 
+| 전체 진단 | ros2 doctor | All 5 checks passed | 
+| 통신 테스트 | talker/listener | I heard: Hello World 출력 | 
+
+
+---
+뭄제 있음.
+---
+
 # Day 2 — Raspberry Pi에 ROS2 Humble 설치
 
 > **목표:** RPi에 ROS2 Humble Hawksbill (ros-base)을 설치하고 정상 동작을 확인한다.
@@ -524,351 +875,3 @@ sudo reboot
 - Colcon 빌드 실습
 
 ---
-
-# Day 2 — Raspberry Pi에 ROS2 Humble 설치 (최종본)
-
-**목표:** Raspberry Pi에 ROS2 Humble Hawksbill을 설치하고 talker/listener 통신을 확인한다.
-
----
-
-## 사전 확인 사항
-
-- Ubuntu 22.04 Server (64bit) 이미징 완료
-- SSH 접속 가능 상태
-- 인터넷 연결 확인
-
----
-
-## Step 1 — 아키텍처 확인
-
-```bash
-uname -m
-```
-
-**정상 결과:**
-```
-aarch64
-```
-
-> ⚠️ `armv7l` 이 나오면 32bit OS → Ubuntu 22.04 64bit로 재이미징 필요
-
----
-
-## Step 2 — 시스템 업데이트
-
-> ⚠️ **핵심 주의사항**
-> - `full-upgrade` 절대 사용 금지 → 커널 교체로 부팅 불가 발생
-> - `upgrade` 도 대용량(500MB+) 쓰기로 저속 SD카드에서 Read-only 오류 발생
-> - **`apt update` 만 실행하고 upgrade 없이 바로 ROS2 설치로 진행**
-
-```bash
-sudo apt update
-```
-
----
-
-## Step 3 — Locale 확인
-
-```bash
-locale
-```
-
-**정상 결과 (둘 중 하나면 OK):**
-```
-LANG=C.UTF-8
-```
-또는
-```
-LANG=en_US.UTF-8
-```
-
-> `C.UTF-8` 은 ROS2와 완전 호환되므로 추가 설정 불필요
-
----
-
-## Step 4 — 필수 패키지 설치
-
-```bash
-sudo apt install -y \
-  software-properties-common \
-  curl \
-  gnupg \
-  lsb-release
-```
-
----
-
-## Step 5 — ROS2 Repository 추가
-
-**GPG Key 추가:**
-```bash
-sudo curl -sSL \
-  https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
-  -o /usr/share/keyrings/ros-archive-keyring.gpg
-```
-
-**Repository 등록:**
-```bash
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu jammy main" | \
-  sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
-```
-
-**패키지 목록 갱신:**
-```bash
-sudo apt update
-```
-
----
-
-## Step 6 — ROS2 Humble 설치
-
-```bash
-sudo apt install -y \
-  ros-humble-ros-base \
-  python3-colcon-common-extensions \
-  python3-argcomplete \
-  ros-dev-tools
-```
-
-> 설치 중 **"Which services should be restarted?"** 화면이 나오면
-> 아무것도 선택하지 않고 **Tab → OK → 엔터** 로 넘어가세요.
-
----
-
-## Step 7 — 데모 노드 설치
-
-> `ros-base` 에는 demo_nodes가 포함되지 않으므로 별도 설치 필요
-
-```bash
-sudo apt install -y \
-  ros-humble-demo-nodes-cpp \
-  ros-humble-demo-nodes-py
-```
-
----
-
-## Step 8 — 환경 변수 등록
-
-```bash
-echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
-source ~/.bashrc
-```
-
----
-
-## Step 9 — CycloneDDS 설치 및 설정
-
-```bash
-sudo apt install -y ros-humble-rmw-cyclonedds-cpp
-```
-
-```bash
-echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc
-source ~/.bashrc
-```
-
-**확인:**
-```bash
-echo $RMW_IMPLEMENTATION
-```
-
-**정상 결과:**
-```
-rmw_cyclonedds_cpp
-```
-
----
-
-## Step 10 — 설치 확인
-
-**환경 변수 확인:**
-```bash
-printenv | grep ROS
-```
-
-**패키지 수 확인:**
-```bash
-ros2 pkg list | wc -l
-```
-> 180개 이상이면 정상
-
-**전체 진단:**
-```bash
-ros2 doctor
-```
-
-**정상 결과:**
-```
-All 5 checks passed
-```
-
-> `UserWarning: XXX has been updated to a new version` 경고는 무시해도 됩니다.
-
----
-
-## Step 11 — talker / listener 통신 테스트
-
-SSH 환경에서는 tmux로 두 터미널을 동시에 운용합니다.
-
-**tmux 설치:**
-```bash
-sudo apt install -y tmux
-```
-
-**tmux 시작:**
-```bash
-tmux
-```
-
-**터미널 1 — talker 실행:**
-```bash
-ros2 run demo_nodes_cpp talker
-```
-
-**터미널 2 열기:**
-```
-Ctrl+B 누른 후 "  (가로 분할)
-Ctrl+B 방향키    (창 이동)
-```
-
-**터미널 2 — listener 실행:**
-```bash
-ros2 run demo_nodes_cpp listener
-```
-
-**정상 결과:**
-```
-[INFO] [talker]: Publishing: 'Hello World: 1'
-[INFO] [listener]: I heard: Hello World: 1
-[INFO] [talker]: Publishing: 'Hello World: 2'
-[INFO] [listener]: I heard: Hello World: 2
-```
-
-종료: 각 터미널에서 `Ctrl+C`
-
----
-
-## Step 12 — 재부팅 및 최종 확인
-
-모든 설정 완료 후 **단 1회** 재부팅합니다.
-
-```bash
-sudo reboot
-```
-
-재접속 후 확인:
-```bash
-echo $RMW_IMPLEMENTATION
-ros2 doctor
-```
-
----
-
-## ✅ 완료 기준
-
-| 항목 | 확인 방법 | 정상 결과 |
-|------|-----------|-----------|
-| aarch64 확인 | `uname -m` | `aarch64` |
-| ROS2 설치 | `ros2 pkg list \| wc -l` | 180+ |
-| 환경 변수 | `printenv \| grep ROS` | ROS 관련 변수 출력 |
-| CycloneDDS | `echo $RMW_IMPLEMENTATION` | `rmw_cyclonedds_cpp` |
-| 전체 진단 | `ros2 doctor` | `All 5 checks passed` |
-| 통신 테스트 | talker/listener | `I heard: Hello World` 출력 |
-
----
-
-## ⚠️ 시행착오 요약 (참고)
-
-| 문제 | 원인 | 해결 |
-|------|------|------|
-| 재부팅 후 SSH 불가, 화면 없음 | `full-upgrade` 로 커널 교체 | `upgrade` 금지, `update` 만 사용 |
-| Read-only file system | 저속 SD카드(U1)에서 대용량 쓰기 실패 | `upgrade` 생략, 고속 SD카드 사용 |
-| `ros2 --version` 에러 | Humble은 `--version` 미지원 | `ros2 doctor` 또는 `ros2 pkg list` 로 확인 |
-| `demo_nodes_cpp` not found | `ros-base` 에 미포함 | `ros-humble-demo-nodes-cpp` 별도 설치 |
-| `$RMW_IMPLEMENTATION` 빈값 | CycloneDDS 미설치 | Step 9 진행 |
-
----
-
-## 🛠️ 편의성 향상을 위한 Alias 추가 구성
-> 라즈베리 파이 환경에서는 매번 긴 명령어를 치거나 임베디드 개발 특성상 빌드/환경 초기화를 자주 하므로, <br> 아래 단축어들을 Step 8이나 별도 단축어 섹션에 추가하면 작업 효율이 극대화됩니다.
-
-1. 가이드에 추가할 추천 단축어 목록
-  * sb: ~/.bashrc 반영 및 확인 메시지 출력
-  * eb: ~/.bashrc 파일을 nano 편집기로 즉시 오픈 (수정이 잦으므로 유용)
-  * humble: ROS2 환경 변수 수동 활성화 (기본 자동 로드가 아닌 선택적 로드를 원할 때 활용)
-  * cw: Colcon 워크스페이스(주로 ~/ros2_ws)로 즉시 이동 및 빌드 환경 로드 (추후 개발 시 필수)
-
-## 📝 가이드 수정 및 반영안
-가이드의 Step 8 — 환경 변수 등록 부분을 아래와 같이 확장하여 작성하시면 가장 자연스럽습니다.
-
-### Step 8 — 환경 변수 및 단축어(Alias) 등록
-터미널을 편리하게 사용하고, ROS2 환경 및 개발 워크스페이스를 쉽게 제어하기 위해 ~/.bashrc에 환경 변수와 단축 명령어를 등록합니다.
-
-```Bash
-# 1. ROS2 기본 환경 변수 등록
-echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
-
-# 2. 편리한 터미널 환경을 위한 Alias(단축어) 등록
-echo "alias eb='vi ~/.bashrc'" >> ~/.bashrc
-# sb 등록 (느낌표 이스케이프 처리)
-echo 'alias sb="source ~/.bashrc; echo '\''[SUCCESS] .bashrc reloaded!'\''"' >> ~/.bashrc
-# humble 등록
-echo 'alias humble="source /opt/ros/humble/setup.bash; echo '\''[ROS2] Humble Hawksbill activated!'\''"' >> ~/.bashrc
-# cw 등록
-echo 'alias cw="cd ~/ros2_ws && source install/setup.bash; echo '\''[ROS2] Workspace loaded!'\''"' >> ~/.bashrc
-# ros2ws
-echo 'alias ros2ws="source ~/IsaacSim-ros_workspaces/humble_ws/install/setup.bash; echo '\''IsaacSim ROS2 workspaces!'\''"' >> ~/.bashrc
-
-# ==========================================
-# ROS2 & Workspace Shortcuts
-# ==========================================
-source /opt/ros/humble/setup.bash
-
-alias eb='nano ~/.bashrc'
-alias sb="source ~/.bashrc; echo '[SUCCESS] .bashrc reloaded!'"
-alias humble="source /opt/ros/humble/setup.bash; echo '[ROS2] Humble Hawksbill activated!'"
-alias cw="cd ~/ros2_ws && source install/setup.bash; echo '[ROS2] Workspace loaded!'"
-alias ros2ws="if [ -f ~/turtlebot3_ws/install/setup.bash ]; then source ~/turtlebot3_ws/install/setup.bash; echo 'TurtleBot3 ROS2 workspace activated!'; else echo '[WARN] Workspace not built yet! Run colcon build first.'; fi"
-
-
-# (선택) 추후 작업할 colcon 워크스페이스가 있다면 함께 등록해두면 편리합니다.
-echo "alias cw='cd ~/ros2_ws && source install/setup.bash; echo \"[ROS2] Workspace loaded!\"'" >> ~/.bashrc
-
-# 3. 변경 사항 적용
-source ~/.bashrc
-```
-
-* 💡 Tip: 만약 기본 ~/.bashrc 진입 시 자동으로 ROS2가 로드되는 것이 부담스럽고(다른 임베디드 작업 혼용 등), 원할 때만 ROS2를 켜고 싶다면
-
-```
-echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc 라인을 생략하고, 필요할 때마다 터미널에 **humble**을 쳐서 활성화하는 방식으로 운영하셔도 좋습니다.
-```
-
-## 🔍 최종 검토 피드백 (완벽하지만 한 줄 더 정교하게)
-* 현재 가이드의 완성도가 매우 높으나, Step 8에서 명령어 간 줄바꿈이나 세미콜론 처리가 가이드 가독성상 분리되면 더 좋습니다.
-
-* 기존 코드:
-```Bash
-echo "source /opt/ros/humble/setup.bash" >> ~/.bashrcsource ~/.bashrc
-```
-* (문서 타이핑 중 source가 붙어 가독성이 떨어져 보일 수 있으므로 아래와 같이 분리하는 것을 권장합니다)
-
-* 개선 코드:
-```
-Bashecho "source /opt/ros/humble/setup.bash" >> ~/.bashrc
-source ~/.bashrc
-```
-
-## 📋 완료 기준 표 업데이트 (Alias 항목 추가)
-
-| 항목 | 확인 방법 | 정상 결과 | 
-|:---------------:|:---------------:|:---------------:|
-| aarch64 확인 | uname -m | aarch64 | 
-| ROS2 설치 | ros2 pkg list | wc -l | 180+ | 
-| 환경 변수 | printenv | grep ROS | ROS 관련 변수 출력 | 
-| CycloneDDS | echo $RMW_IMPLEMENTATION | rmw_cyclonedds_cpp | 
-| 단축어 동작 | sb | [SUCCESS] .bashrc reloaded! 출력 | 
-| 전체 진단 | ros2 doctor | All 5 checks passed | 
-| 통신 테스트 | talker/listener | I heard: Hello World 출력 | 
-
-
