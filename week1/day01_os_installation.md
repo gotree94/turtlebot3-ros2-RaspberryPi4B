@@ -229,6 +229,28 @@ network:
             regulatory-domain: KR
 ```
 
+```
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: true
+  wifis:
+    wlan0:
+      dhcp4: false
+      addresses:
+        - 192.168.75.150/24  # <- 원하는 고정 IP로 변경하세요 (예: 150)
+      routes:
+        - to: default
+          via: 192.168.75.1  # 게이트웨이 IP
+      nameservers:
+        addresses: [8.8.8.8, 1.1.1.1]
+      access-points:
+        "YourWiFiSSID":      # <- 실제 WiFi 이름(SSID)으로 변경
+          password: "YourWiFiPassword"  # <- 실제 WiFi 비밀번호로 변경
+```
+
 적용:
 
 ```bash
