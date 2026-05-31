@@ -809,9 +809,14 @@ ros2 doctor
 echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
 
 # 2. 편리한 터미널 환경을 위한 Alias(단축어) 등록
-echo "alias sb='source ~/.bashrc; echo \"[SUCCESS] .bashrc reloaded!\"'" >> ~/.bashrc
-echo "alias eb='nano ~/.bashrc'" >> ~/.bashrc
-echo "alias humble='source /opt/ros/humble/setup.bash; echo \"[ROS2] Humble Hawksbill activated!\"'" >> ~/.bashrc
+echo "alias eb='vi ~/.bashrc'" >> ~/.bashrc
+# sb 등록 (느낌표 이스케이프 처리)
+echo 'alias sb="source ~/.bashrc; echo '\''[SUCCESS] .bashrc reloaded!'\''"' >> ~/.bashrc
+# humble 등록
+echo 'alias humble="source /opt/ros/humble/setup.bash; echo '\''[ROS2] Humble Hawksbill activated!'\''"' >> ~/.bashrc
+# cw 등록
+echo 'alias cw="cd ~/ros2_ws && source install/setup.bash; echo '\''[ROS2] Workspace loaded!'\''"' >> ~/.bashrc
+
 
 # (선택) 추후 작업할 colcon 워크스페이스가 있다면 함께 등록해두면 편리합니다.
 echo "alias cw='cd ~/ros2_ws && source install/setup.bash; echo \"[ROS2] Workspace loaded!\"'" >> ~/.bashrc
