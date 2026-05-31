@@ -6,11 +6,11 @@
 
 ## 1.1 개요
 
-TurtleBot3 Burger의 두뇌 역할을 할 Raspberry Pi 4B에 운영체제를 설치합니다.
-ROS2 Humble과의 호환성을 위해 **Ubuntu Server 22.04 LTS (Jammy Jellyfish)** 를 사용합니다.
+TurtleBot3 Burger의 두뇌 역할을 할 Raspberry Pi 4B에 운영체제를 설치합니다. <br>
+ROS2 Humble과의 호환성을 위해 **Ubuntu Server 22.04 LTS (Jammy Jellyfish)** 를 사용합니다. <br>
 
 > **왜 Desktop이 아닌 Server 버전인가?**  
-> TurtleBot3의 SBC는 리소스가 제한적입니다. GUI가 필요 없고, 모든 ROS2 명령어는 Remote PC에서 실행하므로 Server 버전으로 충분하며 더 가볍게 동작합니다.
+> TurtleBot3의 SBC는 리소스가 제한적입니다. GUI가 필요 없고,  <br> 모든 ROS2 명령어는 Remote PC에서 실행하므로 Server 버전으로 충분하며 더 가볍게 동작합니다.
 
 ---
 
