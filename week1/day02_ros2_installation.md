@@ -828,7 +828,7 @@ alias eb='nano ~/.bashrc'
 alias sb="source ~/.bashrc; echo '[SUCCESS] .bashrc reloaded!'"
 alias humble="source /opt/ros/humble/setup.bash; echo '[ROS2] Humble Hawksbill activated!'"
 alias cw="cd ~/ros2_ws && source install/setup.bash; echo '[ROS2] Workspace loaded!'"
-alias ros2ws="source ~/IsaacSim-ros_workspaces/humble_ws/install/setup.bash; echo 'IsaacSim ROS2 workspaces!'"
+alias ros2ws="source ~/turtlebot3_ws/install/setup.bash; echo 'TurtleBot3 ROS2 workspace activated!'"
 
 
 # (선택) 추후 작업할 colcon 워크스페이스가 있다면 함께 등록해두면 편리합니다.
