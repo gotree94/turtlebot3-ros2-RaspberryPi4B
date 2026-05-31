@@ -205,7 +205,7 @@ network:
 ```
 
 ```
-  GNU nano 6.2                                        /etc/netplan/50-cloud-init.yaml
+
 # This file is generated from information provided by the datasource.  Changes
 # to it will not persist across an instance reboot.  To disable cloud-init's
 # network configuration capabilities, write a file
@@ -227,7 +227,6 @@ network:
             dhcp4: true
             optional: true
             regulatory-domain: KR
-
 ```
 
 적용:
