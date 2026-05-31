@@ -54,11 +54,7 @@ sudo apt update
 
 ```bash
 # ROS2 Humble ros-base + 필수 도구 설치
-sudo apt install -y \
-  ros-humble-ros-base \
-  python3-argcomplete \
-  python3-colcon-common-extensions \
-  ros-dev-tools
+sudo apt install -y ros-humble-ros-base python3-argcomplete python3-colcon-common-extensions ros-dev-tools
 
 # 의존성 업데이트
 sudo apt update && sudo apt upgrade -y
