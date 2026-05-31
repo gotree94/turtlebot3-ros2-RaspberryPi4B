@@ -816,7 +816,8 @@ echo 'alias sb="source ~/.bashrc; echo '\''[SUCCESS] .bashrc reloaded!'\''"' >> 
 echo 'alias humble="source /opt/ros/humble/setup.bash; echo '\''[ROS2] Humble Hawksbill activated!'\''"' >> ~/.bashrc
 # cw 등록
 echo 'alias cw="cd ~/ros2_ws && source install/setup.bash; echo '\''[ROS2] Workspace loaded!'\''"' >> ~/.bashrc
-
+# ros2ws
+echo 'alias ros2ws="source ~/IsaacSim-ros_workspaces/humble_ws/install/setup.bash; echo '\''IsaacSim ROS2 workspaces!'\''"' >> ~/.bashrc
 
 # (선택) 추후 작업할 colcon 워크스페이스가 있다면 함께 등록해두면 편리합니다.
 echo "alias cw='cd ~/ros2_ws && source install/setup.bash; echo \"[ROS2] Workspace loaded!\"'" >> ~/.bashrc
