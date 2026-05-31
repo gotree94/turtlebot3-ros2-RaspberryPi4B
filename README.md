@@ -6,7 +6,8 @@
 
 ## 📋 개요
 
-이 커리큘럼은 **TurtleBot3 Burger** 로봇에 **Raspberry Pi 4B 8GB**를 SBC로 탑재하고, **ROS2 Humble Hawksbill** 환경에서 최종 프로젝트까지 완성하는 것을 목표로 합니다.
+이 커리큘럼은 **TurtleBot3 Burger** 로봇에 **Raspberry Pi 4B 8GB**를 SBC로 탑재하고, <br>
+**ROS2 Humble Hawksbill** 환경에서 최종 프로젝트까지 완성하는 것을 목표로 합니다.
 
 | 항목 | 내용 |
 |------|------|
