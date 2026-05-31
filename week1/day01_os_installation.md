@@ -181,6 +181,10 @@ ls /etc/netplan/
 sudo nano /etc/netplan/00-installer-config.yaml
 ```
 
+```
+sudo nano /etc/netplan/50-cloud-init.yaml
+```
+
 ```yaml
 network:
   ethernets:
@@ -198,6 +202,32 @@ network:
       access-points:
         "YourWiFiSSID":
           password: "YourWiFiPassword"
+```
+
+```
+  GNU nano 6.2                                        /etc/netplan/50-cloud-init.yaml
+# This file is generated from information provided by the datasource.  Changes
+# to it will not persist across an instance reboot.  To disable cloud-init's
+# network configuration capabilities, write a file
+# /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg with the following:
+# network: {config: disabled}
+network:
+    ethernets:
+        eth0:
+            dhcp4: true
+            dhcp6: true
+            optional: true
+    version: 2
+    wifis:
+        wlan0:
+            access-points:
+                SK_3530_5G:
+                    hidden: true
+                    password: de1df9c5bdae585b1e2506bb50ebe8242c4c57301caa442892698595c5ae0c14
+            dhcp4: true
+            optional: true
+            regulatory-domain: KR
+
 ```
 
 적용:
